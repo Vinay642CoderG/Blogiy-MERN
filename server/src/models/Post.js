@@ -42,6 +42,11 @@ const postSchema = new mongoose.Schema(
       default: "draft",
     },
 
+    category: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+    },
+
     tags: [
       {
         type: String,

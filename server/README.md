@@ -52,15 +52,6 @@ npm start
 ```bash
 # Run all tests
 npm test
-
-# Run with coverage
-npm run test:coverage
-
-# Run unit tests only
-npm run test:unit
-
-# Run integration tests only
-npm run test:integration
 ```
 
 Test environment uses `.env.test` with separate test database.
@@ -79,8 +70,7 @@ server/
 │   ├── validations/         # Joi validation schemas
 │   └── app.js              # Express app setup
 ├── tests/
-│   ├── unit/               # Unit tests
-│   ├── integration/        # Integration tests
+│   ├── api/                # API tests
 │   ├── helpers/            # Test utilities
 │   ├── setup.js            # Global test setup
 │   └── db.config.js        # Test database config
@@ -111,6 +101,15 @@ server/
 - `PUT /api/v1/posts/:id` - Update post (admin only)
 - `DELETE /api/v1/posts/:id` - Delete post (admin only)
 
+### Categories
+
+- `GET /api/v1/categories` - Get all categories (public)
+- `GET /api/v1/categories/:id` - Get category by ID (public)
+- `GET /api/v1/categories/:categoryId/posts` - Get posts by category (public)
+- `POST /api/v1/categories` - Create category (admin only)
+- `PUT /api/v1/categories/:id` - Update category (admin only)
+- `DELETE /api/v1/categories/:id` - Delete category (admin only)
+
 ### Comments
 
 - `GET /api/v1/comments/post/:postId` - Get post comments (public)
@@ -120,20 +119,19 @@ server/
 
 ### AI Content Generation
 
-- `POST /api/v1/ai/suggest-titles` - Generate title suggestions (admin only)
-- `POST /api/v1/ai/suggest-content` - Generate post content (admin only)
-
-See `AI_FEATURE.md` for detailed AI feature documentation.
+- `POST /api/v1/posts/generate-content` - Generate post content (admin only)
 
 ### Users
 
-- Protected routes require authentication via HTTP-only cookies
+- `GET /api/v1/users` - Get all users (admin only)
+- `GET /api/v1/users/:id` - Get user by ID (admin only)
+- `PUT /api/v1/users/:id` - Update user (admin only)
+- `DELETE /api/v1/users/:id` - Delete user (admin only)
 
 ## Scripts
 
-| Command                 | Description              |
-| ----------------------- | ------------------------ |
-| `npm start`             | Start production server  |
-| `npm run dev`           | Start development server |
-| `npm test`              | Run all tests            |
-| `npm run test:coverage` | Run tests with coverage  |
+| Command       | Description              |
+| ------------- | ------------------------ |
+| `npm start`   | Start production server  |
+| `npm run dev` | Start development server |
+| `npm test`    | Run all tests            |

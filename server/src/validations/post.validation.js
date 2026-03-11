@@ -5,6 +5,7 @@ export const createPostSchema = Joi.object({
   content: Joi.string().min(10).required(),
   excerpt: Joi.string().max(300).optional(),
   tags: Joi.string().optional(),
+  category: Joi.string().optional(),
   status: Joi.string().valid("draft", "published", "archived").optional(),
 });
 
@@ -13,6 +14,7 @@ export const updatePostSchema = Joi.object({
   content: Joi.string().min(10).optional(),
   excerpt: Joi.string().max(300).optional(),
   tags: Joi.string().optional(),
+  category: Joi.string().optional(),
   status: Joi.string().valid("draft", "published", "archived").optional(),
 });
 

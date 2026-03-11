@@ -6,12 +6,14 @@ import {
   loginTestUser,
 } from "../helpers/testHelpers.js";
 import Post from "../../src/models/Post.js";
+import Category from "../../src/models/Category.js";
 
 describe("Post API", () => {
   let userToken;
   let adminToken;
   let userId;
   let postId;
+  let categoryId;
 
   beforeEach(async () => {
     // Create regular user
@@ -42,11 +44,16 @@ describe("Post API", () => {
     userToken = [`accessToken=${userLogin.accessToken}`];
     adminToken = [`accessToken=${adminLogin.accessToken}`];
 
+    // Create a test category
+    const category = await Category.create({ name: "Technology" });
+    categoryId = category._id;
+
     // Create a published post
     const post = await Post.create({
       title: "Test Post",
       content: "This is test content",
       author: userId,
+      category: categoryId,
       status: "published",
     });
     postId = post._id;
@@ -65,6 +72,22 @@ describe("Post API", () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.title).toBe("New Post");
+    });
+
+    it("should create a post with category", async () => {
+      const response = await request(app)
+        .post("/api/v1/posts")
+        .set("Cookie", adminToken)
+        .send({
+          title: "Tech Post",
+          content: "This is tech content",
+          category: categoryId.toString(),
+        })
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.title).toBe("Tech Post");
+      expect(response.body.data.category._id).toBe(categoryId.toString());
     });
 
     it("should fail without authentication", async () => {
@@ -100,6 +123,14 @@ describe("Post API", () => {
       expect(response.body.success).toBe(true);
       expect(Array.isArray(response.body.data.docs)).toBe(true);
     });
+
+    it("should get posts with category populated", async () => {
+      const response = await request(app).get("/api/v1/posts").expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.docs[0].category).toBeDefined();
+      expect(response.body.data.docs[0].category.name).toBe("Technology");
+    });
   });
 
   describe("GET /api/v1/posts/:id (Protected)", () => {
@@ -111,6 +142,17 @@ describe("Post API", () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.title).toBe("Test Post");
+    });
+
+    it("should get post with category populated", async () => {
+      const response = await request(app)
+        .get(`/api/v1/posts/${postId}`)
+        .set("Cookie", userToken)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.category).toBeDefined();
+      expect(response.body.data.category._id).toBe(categoryId.toString());
     });
 
     it("should fail without authentication", async () => {
@@ -132,6 +174,19 @@ describe("Post API", () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.title).toBe("Updated Title");
+    });
+
+    it("should update post category", async () => {
+      const newCategory = await Category.create({ name: "Lifestyle" });
+
+      const response = await request(app)
+        .put(`/api/v1/posts/${postId}`)
+        .set("Cookie", adminToken)
+        .send({ category: newCategory._id.toString() })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.category._id).toBe(newCategory._id.toString());
     });
 
     it("should deny regular user access", async () => {

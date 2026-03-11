@@ -9,7 +9,7 @@ import generateAIContent from "../config/gemini.js";
    Create Post
 */
 export const createPost = asyncHandler(async (req, res) => {
-  const { title, content, excerpt, tags, status } = req.body;
+  const { title, content, excerpt, tags, status, category } = req.body;
 
   // Handle featured image if uploaded
   let featuredImage = "";
@@ -24,13 +24,13 @@ export const createPost = asyncHandler(async (req, res) => {
     featuredImage,
     tags: tags ? tags.split(",").map((tag) => tag.trim()) : [],
     status: status || "draft",
+    category,
     author: req.user.id,
   });
 
-  const populatedPost = await Post.findById(post._id).populate(
-    "author",
-    "name email",
-  );
+  const populatedPost = await Post.findById(post._id)
+    .populate("author", "name email")
+    .populate("category");
 
   res.status(201).json(new ApiResponse(201, null, populatedPost));
 });
@@ -88,7 +88,10 @@ export const getPosts = asyncHandler(async (req, res) => {
     page: Number(page),
     limit: Number(limit),
     sort,
-    populate: { path: "author", select: "name email profileImage" },
+    populate: [
+      { path: "author", select: "name email profileImage" },
+      { path: "category" },
+    ],
   };
 
   const posts = await Post.paginate(query, options);
@@ -102,10 +105,9 @@ export const getPosts = asyncHandler(async (req, res) => {
 export const getPostById = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  const post = await Post.findById(id).populate(
-    "author",
-    "name email profileImage",
-  );
+  const post = await Post.findById(id)
+    .populate("author", "name email profileImage")
+    .populate("category");
 
   if (!post) {
     throw new ApiError(404, "Post not found");
@@ -198,7 +200,7 @@ export const getMyPosts = asyncHandler(async (req, res) => {
 */
 export const updatePost = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { title, content, excerpt, tags, status } = req.body;
+  const { title, content, excerpt, tags, status, category } = req.body;
 
   const post = await Post.findById(id);
 
@@ -212,6 +214,7 @@ export const updatePost = asyncHandler(async (req, res) => {
   if (excerpt !== undefined) post.excerpt = excerpt;
   if (status) post.status = status;
   if (tags) post.tags = tags.split(",").map((tag) => tag.trim());
+  if (category !== undefined) post.category = category;
 
   // Update featured image if uploaded
   if (req.file) {
@@ -228,10 +231,9 @@ export const updatePost = asyncHandler(async (req, res) => {
 
   await post.save();
 
-  const updatedPost = await Post.findById(post._id).populate(
-    "author",
-    "name email profileImage",
-  );
+  const updatedPost = await Post.findById(post._id)
+    .populate("author", "name email profileImage")
+    .populate("category");
 
   res.status(200).json(new ApiResponse(200, null, updatedPost));
 });
