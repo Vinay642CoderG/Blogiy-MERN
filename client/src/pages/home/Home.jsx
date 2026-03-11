@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
+import { Spinner } from "@radix-ui/themes";
 import { Button, Loader } from "../../components/ui";
 import HeroSection from "./components/HeroSection";
 import BlogCard from "./components/BlogCard";
@@ -11,19 +12,20 @@ function Home() {
   const [posts, setPosts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [postsLoading, setPostsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [filteredPosts, setFilteredPosts] = useState([]);
 
+  // Initial data fetch - only categories and initial posts
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchInitialData = async () => {
       try {
         setLoading(true);
         const [postsResponse, categoriesResponse] = await Promise.all([
           postApi.getPosts({
             status: "published",
-            limit: 50, // Increased limit to get more posts for filtering
+            limit: 12,
             sortBy: "createdAt",
             order: "desc",
           }),
@@ -35,42 +37,61 @@ function Home() {
 
         setPosts(postsData);
         setCategories(categoriesData);
-        setFilteredPosts(postsData);
       } catch (err) {
-        console.error("Failed to fetch data:", err);
+        console.error("Failed to fetch initial data:", err);
         setError("Failed to load content");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    fetchInitialData();
   }, []);
 
-  // Filter posts based on search query and selected category
+  // Fetch posts based on search and category filters
+  const fetchFilteredPosts = useCallback(async (search = "", category = "") => {
+    try {
+      setPostsLoading(true);
+      const params = {
+        status: "published",
+        limit: 50,
+        sortBy: "createdAt",
+        order: "desc",
+      };
+
+      if (search.trim()) {
+        params.search = search.trim();
+      }
+
+      if (category) {
+        params.category = category;
+      }
+
+      const response = await postApi.getPosts(params);
+      const postsData = response.data.data.docs || [];
+      setPosts(postsData);
+    } catch (err) {
+      console.error("Failed to fetch filtered posts:", err);
+      setError("Failed to load posts");
+    } finally {
+      setPostsLoading(false);
+    }
+  }, []);
+
+  // Handle search with debouncing
   useEffect(() => {
-    let filtered = posts;
-
-    // Filter by category
-    if (selectedCategory) {
-      filtered = filtered.filter(
-        (post) => post.category?._id === selectedCategory,
-      );
+    if (!searchQuery && !selectedCategory) {
+      // If no filters, fetch initial posts
+      fetchFilteredPosts();
+      return;
     }
 
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (post) =>
-          post.title.toLowerCase().includes(query) ||
-          post.excerpt.toLowerCase().includes(query) ||
-          post.category?.name.toLowerCase().includes(query),
-      );
-    }
+    const timeoutId = setTimeout(() => {
+      fetchFilteredPosts(searchQuery, selectedCategory);
+    }, 300); // 300ms debounce
 
-    setFilteredPosts(filtered);
-  }, [posts, searchQuery, selectedCategory]);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, selectedCategory, fetchFilteredPosts]);
 
   const handleSearch = (query) => {
     setSearchQuery(query);
@@ -78,6 +99,11 @@ function Home() {
 
   const handleCategoryChange = (categoryId) => {
     setSelectedCategory(categoryId);
+  };
+
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setSelectedCategory("");
   };
 
   const formatDate = (dateString) => {
@@ -115,6 +141,7 @@ function Home() {
               categories={categories}
               selectedCategory={selectedCategory}
               onCategoryChange={handleCategoryChange}
+              loading={postsLoading}
             />
           )}
         </div>
@@ -133,15 +160,10 @@ function Home() {
                     ? `Search results for "${searchQuery}"`
                     : `Posts in ${categories.find((c) => c._id === selectedCategory)?.name}`}
               </h3>
-              <p className="text-gray-600">
-                {filteredPosts.length} posts found
-              </p>
+              <p className="text-gray-600">{posts.length} posts found</p>
               {(searchQuery || selectedCategory) && (
                 <button
-                  onClick={() => {
-                    setSearchQuery("");
-                    setSelectedCategory("");
-                  }}
+                  onClick={handleClearFilters}
                   className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
                 >
                   Clear filters
@@ -161,36 +183,48 @@ function Home() {
                 Try Again
               </Button>
             </div>
-          ) : filteredPosts.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-gray-600 mb-4">
-                {searchQuery || selectedCategory
-                  ? "No posts found matching your criteria."
-                  : "No posts available yet."}
-              </p>
-              <p className="text-sm text-gray-500">
-                {searchQuery || selectedCategory
-                  ? "Try adjusting your search or category filter."
-                  : "Check back later for new content!"}
-              </p>
-            </div>
           ) : (
             <>
-              {/* Blog Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {filteredPosts.map((post) => (
-                  <BlogCard
-                    key={post._id}
-                    id={post._id}
-                    title={post.title}
-                    description={post.excerpt}
-                    category={post.category?.name}
-                    date={formatDate(post.createdAt)}
-                    readTime={calculateReadTime(post.content)}
-                    image={post._featuredImage?.url}
-                  />
-                ))}
-              </div>
+              {/* Posts Loading State */}
+              {postsLoading && (
+                <div className="flex justify-center items-center py-8 mb-8">
+                  <Spinner size="3" />
+                  <span className="ml-3 text-gray-600">Loading posts...</span>
+                </div>
+              )}
+
+              {/* Posts Content */}
+              {!postsLoading && posts.length === 0 ? (
+                <div className="text-center py-16">
+                  <p className="text-gray-600 mb-4">
+                    {searchQuery || selectedCategory
+                      ? "No posts found matching your criteria."
+                      : "No posts available yet."}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {searchQuery || selectedCategory
+                      ? "Try adjusting your search or category filter."
+                      : "Check back later for new content!"}
+                  </p>
+                </div>
+              ) : (
+                !postsLoading && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {posts.map((post) => (
+                      <BlogCard
+                        key={post._id}
+                        id={post._id}
+                        title={post.title}
+                        description={post.excerpt}
+                        category={post.category?.name}
+                        date={formatDate(post.createdAt)}
+                        readTime={calculateReadTime(post.content)}
+                        image={post._featuredImage?.url}
+                      />
+                    ))}
+                  </div>
+                )
+              )}
             </>
           )}
         </div>

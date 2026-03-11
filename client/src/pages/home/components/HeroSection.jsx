@@ -2,7 +2,7 @@ import { useState } from "react";
 import { HiSearch, HiSparkles } from "react-icons/hi";
 import { Button } from "../../../components/ui";
 
-function HeroSection({ onSearch, searchQuery }) {
+function HeroSection({ onSearch, searchQuery, loading = false }) {
   const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery || "");
 
   const handleSearch = (e) => {
