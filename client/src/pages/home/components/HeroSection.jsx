@@ -1,23 +1,20 @@
 import { useState } from "react";
 import { HiSearch, HiSparkles } from "react-icons/hi";
 import { Button } from "../../../components/ui";
-import CategoryPills from "./CategoryPills";
 
-function HeroSection() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState("All");
-
-  const categories = [
-    "All",
-    "Technology",
-    "Design",
-    "Development",
-    "Lifestyle",
-  ];
+function HeroSection({ onSearch, searchQuery }) {
+  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery || "");
 
   const handleSearch = (e) => {
     e.preventDefault();
-    console.log("Searching for:", searchQuery);
+    onSearch(localSearchQuery);
+  };
+
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setLocalSearchQuery(value);
+    // Real-time search as user types
+    onSearch(value);
   };
 
   return (
@@ -64,8 +61,8 @@ function HeroSection() {
             <div className="relative">
               <input
                 type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={localSearchQuery}
+                onChange={handleInputChange}
                 placeholder="Search for posts..."
                 className="w-full px-6 py-5 pr-36 text-gray-900 bg-white border-2 border-transparent rounded-xl shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-400"
               />
@@ -79,15 +76,6 @@ function HeroSection() {
             </div>
           </div>
         </form>
-
-        {/* Category Pills */}
-        <div className="animate-fade-in-up animation-delay-600">
-          <CategoryPills
-            categories={categories}
-            activeCategory={activeCategory}
-            onCategoryChange={setActiveCategory}
-          />
-        </div>
       </div>
     </section>
   );

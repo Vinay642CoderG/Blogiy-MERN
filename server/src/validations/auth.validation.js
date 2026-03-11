@@ -6,8 +6,4 @@ const baseUserSchema = Joi.object({
   password: Joi.string().min(6).max(20).required(),
 });
 
-export const registerUserSchema = baseUserSchema.keys({
-  name: Joi.string().min(3).max(50).required(),
-});
-
 export const loginUserSchema = baseUserSchema;

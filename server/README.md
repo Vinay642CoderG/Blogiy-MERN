@@ -1,43 +1,111 @@
-# Blog App Backend
+# Blogify Server
 
-A Node.js/Express backend API for a blog application with authentication and user management.
+Node.js backend API for the Blogify blog platform with authentication, content management, and AI integration.
 
-## Tech Stack
+## 🚀 Features
 
-- Node.js + Express.js
-- MongoDB + Mongoose
-- JWT Authentication
-- Gemini AI (Content Generation)
-- Jest + Supertest (Testing)
+- **JWT Authentication**: Secure authentication with access/refresh tokens
+- **Content Management**: Full CRUD operations for blog posts
+- **AI Integration**: Google Gemini API for content generation
+- **File Upload**: Image upload with Multer
+- **Anonymous Comments**: Public commenting system
+- **Admin Dashboard**: Statistics and analytics
+- **Data Validation**: Joi schema validation
+- **Error Handling**: Centralized error management
+- **Security**: CORS, rate limiting, and secure headers
 
-## Installation
+## 🛠️ Tech Stack
 
-1. Install dependencies
+- **Node.js** with Express.js framework
+- **MongoDB** with Mongoose ODM
+- **JWT** for authentication
+- **Google Gemini AI** for content generation
+- **Multer** for file uploads
+- **Joi** for data validation
+- **bcrypt** for password hashing
+
+## 📁 Project Structure
+
+```
+server/
+├── src/
+│   ├── config/          # Configuration files
+│   │   ├── db.js        # Database connection
+│   │   ├── env.js       # Environment variables
+│   │   ├── gemini.js    # AI configuration
+│   │   └── multer.js    # File upload config
+│   ├── controllers/     # Route controllers
+│   │   ├── auth.controller.js
+│   │   ├── post.controller.js
+│   │   ├── comment.controller.js
+│   │   ├── category.controller.js
+│   │   ├── user.controller.js
+│   │   └── dashboard.controller.js
+│   ├── middleware/      # Custom middleware
+│   │   ├── auth.middleware.js
+│   │   ├── error.middleware.js
+│   │   └── validate.middleware.js
+│   ├── models/          # Mongoose models
+│   │   ├── User.js
+│   │   ├── Post.js
+│   │   ├── Comment.js
+│   │   └── Category.js
+│   ├── routes/          # API routes
+│   ├── utils/           # Utility functions
+│   ├── validations/     # Joi validation schemas
+│   └── app.js          # Express app setup
+├── scripts/            # Utility scripts
+│   └── create-admin.js # Admin user creation
+└── server.js          # Entry point
+```
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js (v16 or higher)
+- MongoDB (local or cloud)
+- Google Gemini API key
+
+### Installation
+
+1. **Install dependencies**
 
 ```bash
 npm install
 ```
 
-2. Configure environment variables in `.env`
+2. **Environment Setup**
+
+```bash
+cp .env.example .env
+```
+
+Configure your `.env` file:
 
 ```env
 PORT=5000
 NODE_ENV=development
-MONGO_URI=mongodb://localhost:27017/blogDB
-JWT_ACCESS_SECRET=your_access_secret
-JWT_REFRESH_SECRET=your_refresh_secret
-JWT_ACCESS_EXPIRES=7d
-JWT_REFRESH_EXPIRES=7d
-GEMINI_API_KEY=your_gemini_api_key
+MONGO_URI=mongodb://localhost:27017/blogify
+JWT_ACCESS_SECRET=your_access_secret_here
+JWT_REFRESH_SECRET=your_refresh_secret_here
+GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
-3. Start MongoDB
+3. **Start MongoDB**
 
 ```bash
-mongosh
+# If using local MongoDB
+mongod
 ```
 
-4. Run the application
+4. **Create Admin User**
+
+```bash
+npm run create-admin
+```
+
+5. **Start the Server**
 
 ```bash
 # Development
@@ -47,91 +115,111 @@ npm run dev
 npm start
 ```
 
-## Testing
-
-```bash
-# Run all tests
-npm test
-```
-
-Test environment uses `.env.test` with separate test database.
-
-## Project Structure
-
-```
-server/
-├── src/
-│   ├── config/              # Configuration files
-│   ├── controllers/         # Route controllers
-│   ├── middleware/          # Custom middleware
-│   ├── models/              # Mongoose models
-│   ├── routes/              # API routes
-│   ├── utils/               # Utility functions
-│   ├── validations/         # Joi validation schemas
-│   └── app.js              # Express app setup
-├── tests/
-│   ├── api/                # API tests
-│   ├── helpers/            # Test utilities
-│   ├── setup.js            # Global test setup
-│   └── db.config.js        # Test database config
-├── scripts/                # Utility scripts
-├── uploads/                # File upload directory
-├── .env                    # Environment variables
-├── .env.test              # Test environment variables
-├── jest.config.js         # Jest configuration
-└── server.js              # Entry point
-```
-
-## API Endpoints
+## 📚 API Endpoints
 
 ### Authentication
 
-- `POST /api/v1/auth/register` - Register new user
-- `POST /api/v1/auth/login` - Login user
-- `POST /api/v1/auth/refresh` - Refresh access token
+- `POST /api/v1/auth/login` - Admin login
 - `POST /api/v1/auth/logout` - Logout user
-- `GET /api/v1/auth/me` - Get current user
+- `POST /api/v1/auth/refresh-token` - Refresh access token
 
 ### Posts
 
-- `GET /api/v1/posts` - Get all published posts (public)
+- `GET /api/v1/posts` - Get published posts (public)
+- `GET /api/v1/posts/admin/all` - Get all posts (admin)
 - `GET /api/v1/posts/:id` - Get post by ID
-- `GET /api/v1/posts/slug/:slug` - Get post by slug (public)
-- `POST /api/v1/posts` - Create post (admin only)
-- `PUT /api/v1/posts/:id` - Update post (admin only)
-- `DELETE /api/v1/posts/:id` - Delete post (admin only)
+- `POST /api/v1/posts` - Create post (admin)
+- `PUT /api/v1/posts/:id` - Update post (admin)
+- `DELETE /api/v1/posts/:id` - Delete post (admin)
+- `POST /api/v1/posts/generate-content` - AI content generation (admin)
 
 ### Categories
 
 - `GET /api/v1/categories` - Get all categories (public)
-- `GET /api/v1/categories/:id` - Get category by ID (public)
-- `GET /api/v1/categories/:categoryId/posts` - Get posts by category (public)
-- `POST /api/v1/categories` - Create category (admin only)
-- `PUT /api/v1/categories/:id` - Update category (admin only)
-- `DELETE /api/v1/categories/:id` - Delete category (admin only)
+- `POST /api/v1/categories` - Create category (admin)
+- `PUT /api/v1/categories/:id` - Update category (admin)
+- `DELETE /api/v1/categories/:id` - Delete category (admin)
 
 ### Comments
 
 - `GET /api/v1/comments/post/:postId` - Get post comments (public)
-- `POST /api/v1/comments` - Create comment (authenticated)
-- `PUT /api/v1/comments/:id` - Update comment (author/admin)
-- `DELETE /api/v1/comments/:id` - Delete comment (author/admin)
+- `GET /api/v1/comments/admin/all` - Get all comments (admin)
+- `POST /api/v1/comments` - Create comment (anonymous)
+- `PUT /api/v1/comments/:id` - Update comment (admin)
+- `DELETE /api/v1/comments/:id` - Delete comment (admin)
 
-### AI Content Generation
+### Dashboard
 
-- `POST /api/v1/posts/generate-content` - Generate post content (admin only)
+- `GET /api/v1/dashboard/stats` - Get dashboard statistics (admin)
 
 ### Users
 
-- `GET /api/v1/users` - Get all users (admin only)
-- `GET /api/v1/users/:id` - Get user by ID (admin only)
-- `PUT /api/v1/users/:id` - Update user (admin only)
-- `DELETE /api/v1/users/:id` - Delete user (admin only)
+- `GET /api/v1/users/profile/me` - Get own profile (admin)
+- `PUT /api/v1/users/profile/me` - Update own profile (admin)
 
-## Scripts
+## 🔧 Available Scripts
 
-| Command       | Description              |
-| ------------- | ------------------------ |
-| `npm start`   | Start production server  |
-| `npm run dev` | Start development server |
-| `npm test`    | Run all tests            |
+| Command                | Description                           |
+| ---------------------- | ------------------------------------- |
+| `npm start`            | Start production server               |
+| `npm run dev`          | Start development server with nodemon |
+| `npm run create-admin` | Create admin user                     |
+| `npm run list-models`  | List available Gemini models          |
+
+## 🔐 Authentication
+
+The API uses JWT tokens with the following approach:
+
+- **Access Token**: Short-lived (15 minutes), stored in httpOnly cookie
+- **Refresh Token**: Long-lived (7 days), stored in httpOnly cookie
+- **Admin Only**: Most endpoints require admin authentication
+
+## 🤖 AI Integration
+
+- **Google Gemini API**: Used for automated content generation
+- **Content Generation**: Creates blog content based on titles
+- **Configurable**: Model selection and parameters can be adjusted
+
+## 📁 File Upload
+
+- **Multer Configuration**: Handles image uploads
+- **File Types**: Supports common image formats (JPG, PNG, GIF)
+- **Size Limits**: Configurable file size restrictions
+- **Storage**: Local file system storage
+
+## 🛡️ Security Features
+
+- **CORS**: Cross-origin resource sharing configuration
+- **Helmet**: Security headers
+- **Rate Limiting**: API rate limiting
+- **Input Validation**: Joi schema validation
+- **Password Hashing**: bcrypt for secure password storage
+- **JWT Security**: Secure token implementation
+
+## 🗄️ Database Models
+
+### User
+
+- Authentication and profile information
+- Admin role management
+
+### Post
+
+- Blog post content and metadata
+- Category relationships
+- Featured image support
+
+### Comment
+
+- Anonymous commenting system
+- Post relationships
+
+### Category
+
+- Post categorization
+- Hierarchical structure support
+
+## 🔗 Related
+
+- [Client Documentation](../client/README.md)
+- [Root Documentation](../README.md)

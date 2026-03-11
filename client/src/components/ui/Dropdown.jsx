@@ -31,9 +31,10 @@ function DropdownContent({ children, className, align = "end", ...props }) {
   );
 }
 
-function DropdownItem({ children, className, ...props }) {
+function DropdownItem({ children, className, asChild = false, ...props }) {
   return (
     <DropdownMenu.Item
+      asChild={asChild}
       className={cn(
         "px-3 py-2 text-sm text-gray-700 rounded cursor-pointer outline-none",
         "hover:bg-gray-100 focus:bg-gray-100 transition-colors",

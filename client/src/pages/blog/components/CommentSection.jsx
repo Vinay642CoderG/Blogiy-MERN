@@ -1,23 +1,67 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useDispatch } from "react-redux";
+import toast from "react-hot-toast";
 import CommentForm from "./CommentForm";
 import CommentList from "./CommentList";
+import { createComment } from "../../../redux/slices/commentSlice";
+import { commentApi } from "../../../api/api";
 
-function CommentSection({ initialComments = [] }) {
+function CommentSection({ postId }) {
+  const dispatch = useDispatch();
   const [comment, setComment] = useState("");
-  const [comments, setComments] = useState(initialComments);
+  const [name, setName] = useState("");
+  const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const handleCommentSubmit = (e) => {
+  // Load comments for the post
+  useEffect(() => {
+    if (postId) {
+      loadComments();
+    }
+  }, [postId]);
+
+  const loadComments = async () => {
+    try {
+      const response = await commentApi.getPostComments(postId);
+      setComments(response.data.data.docs || []);
+    } catch (error) {
+      console.error("Failed to load comments:", error);
+    }
+  };
+
+  const handleCommentSubmit = async (e) => {
     e.preventDefault();
-    if (comment.trim()) {
-      const newComment = {
-        id: comments.length + 1,
-        author: "You",
-        content: comment,
-        date: "Just now",
-        avatar: "YO",
-      };
-      setComments([newComment, ...comments]);
+
+    if (!comment.trim()) {
+      toast.error("Please enter a comment");
+      return;
+    }
+
+    if (!name.trim()) {
+      toast.error("Please enter your name");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await dispatch(
+        createComment({
+          content: comment.trim(),
+          postId,
+          name: name.trim(),
+        }),
+      ).unwrap();
+
+      toast.success("Comment posted successfully!");
       setComment("");
+      setName("");
+
+      // Reload comments to show the new one
+      await loadComments();
+    } catch (error) {
+      toast.error(error || "Failed to post comment");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -30,7 +74,10 @@ function CommentSection({ initialComments = [] }) {
       <CommentForm
         comment={comment}
         setComment={setComment}
+        name={name}
+        setName={setName}
         onSubmit={handleCommentSubmit}
+        loading={loading}
       />
 
       <CommentList comments={comments} />

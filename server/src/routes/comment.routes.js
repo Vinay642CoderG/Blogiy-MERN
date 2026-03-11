@@ -2,11 +2,9 @@ import express from "express";
 import {
   createComment,
   getPostComments,
-  getCommentReplies,
-  getCommentById,
   updateComment,
   deleteComment,
-  getMyComments,
+  getAllComments,
 } from "../controllers/comment.controller.js";
 import validate from "../middleware/validate.middleware.js";
 import {
@@ -21,23 +19,17 @@ const router = express.Router();
 // Get comments for a post
 router.get("/post/:postId", getPostComments);
 
-// Get replies for a comment
-router.get("/:commentId/replies", getCommentReplies);
+// Create comment (anonymous users)
+router.post("/", validate(createCommentSchema), createComment);
 
-// Get comment by ID
-router.get("/:id", getCommentById);
+/* Admin Routes */
+// Get all comments (admin only)
+router.get("/admin/all", protect, getAllComments);
 
-/* Protected Routes */
-// Get my comments
-router.get("/my/comments", protect, getMyComments);
-
-// Create comment (authenticated users)
-router.post("/", protect, validate(createCommentSchema), createComment);
-
-// Update comment (author or admin)
+// Update comment (admin only)
 router.put("/:id", protect, validate(updateCommentSchema), updateComment);
 
-// Delete comment (author or admin)
+// Delete comment (admin only)
 router.delete("/:id", protect, deleteComment);
 
 export default router;

@@ -1,137 +1,135 @@
 import { useState } from "react";
-import { IoSparkles, IoRefresh } from "react-icons/io5";
-import Dialog from "../../../components/ui/Dialog";
-import Button from "../../../components/ui/Button";
-import Input from "../../../components/ui/Input";
-import Textarea from "../../../components/ui/Textarea";
+import { useDispatch, useSelector } from "react-redux";
+import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
+import { IoSparkles, IoClose } from "react-icons/io5";
+import { Dialog, Button, Input, FormField } from "@/components/ui";
+import { generatePostContent } from "@/redux/slices/postSlice";
 
-function AIGenerateDialog({ open, onClose, onGenerate }) {
-  const [prompt, setPrompt] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedContent, setGeneratedContent] = useState({
-    title: "",
-    content: "",
-    excerpt: "",
+function AIGenerateDialog({ isOpen, onClose, onContentGenerated }) {
+  const dispatch = useDispatch();
+  const { aiGeneration } = useSelector((state) => state.posts);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      title: "",
+    },
   });
 
-  const handleGenerate = () => {
-    setIsGenerating(true);
+  const onSubmit = async (data) => {
+    try {
+      const result = await dispatch(generatePostContent(data)).unwrap();
 
-    // Simulate AI generation (replace with actual API call)
-    setTimeout(() => {
-      setGeneratedContent({
-        title: `${prompt} - A Comprehensive Guide`,
-        excerpt: `Learn everything you need to know about ${prompt} in this detailed guide.`,
-        content: `# Introduction to ${prompt}\n\nThis is a comprehensive guide about ${prompt}. Here we'll explore various aspects and provide detailed insights.\n\n## Key Points\n\n- Important concept 1\n- Important concept 2\n- Important concept 3\n\n## Conclusion\n\nIn this article, we've covered the fundamentals of ${prompt}.`,
-      });
-      setIsGenerating(false);
-    }, 2000);
+      // Pass the generated content back to the parent component
+      if (onContentGenerated) {
+        onContentGenerated(result);
+      }
+
+      toast.success("Content generated successfully!");
+      onClose();
+      reset();
+    } catch (error) {
+      toast.error(error || "Failed to generate content");
+    }
   };
 
-  const handleUseGenerated = () => {
-    onGenerate(generatedContent);
+  const handleClose = () => {
+    onClose();
+    reset();
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <Dialog.Content className="max-w-3xl">
-        <Dialog.Header>
-          <Dialog.Title className="flex items-center gap-2">
-            <IoSparkles className="h-5 w-5 text-blue-600" />
-            Generate Content with AI
-          </Dialog.Title>
-          <Dialog.Description>
-            Describe what you want to write about, and AI will generate content
-            for you
-          </Dialog.Description>
-        </Dialog.Header>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <Dialog.Content className="max-w-md mx-4">
+        <Dialog.Title className="sr-only">Generate AI Content</Dialog.Title>
 
-        <Dialog.Body className="space-y-4">
-          {/* Prompt Input */}
+        {/* Custom Header */}
+        <div className="flex items-center gap-4 p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-blue-50">
+          <div className="p-3 rounded-xl bg-purple-100 text-purple-600">
+            <IoSparkles className="h-6 w-6" />
+          </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              What do you want to write about?
-            </label>
-            <div className="flex gap-2">
-              <Input
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="e.g., React hooks, TypeScript best practices..."
-                className="flex-1"
-              />
-              <Button
-                onClick={handleGenerate}
-                disabled={!prompt || isGenerating}
-                isLoading={isGenerating}
-              >
-                <IoSparkles className="h-4 w-4 mr-2" />
-                Generate
-              </Button>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Generate AI Content
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Let AI create engaging blog content for you
+            </p>
+          </div>
+        </div>
+
+        {/* Form Content */}
+        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
+          <FormField
+            label="Blog Post Title"
+            error={errors.title?.message}
+            required
+          >
+            <Input
+              placeholder="Enter the topic or title for your blog post"
+              className="h-12 text-base"
+              {...register("title", {
+                required: "Title is required",
+                minLength: {
+                  value: 3,
+                  message: "Title must be at least 3 characters",
+                },
+                maxLength: {
+                  value: 200,
+                  message: "Title must not exceed 200 characters",
+                },
+              })}
+            />
+          </FormField>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <IoSparkles className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-blue-800">
+                  AI Content Generation
+                </p>
+                <p className="text-xs text-blue-700 mt-1">
+                  Our AI will create comprehensive blog content based on your
+                  title. The generated content will be in markdown format, which
+                  you can edit and customize.
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* Generated Content Preview */}
-          {generatedContent.title && (
-            <div className="space-y-4 pt-4 border-t border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-gray-900">
-                  Generated Content
-                </h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleGenerate}
-                  disabled={isGenerating}
-                >
-                  <IoRefresh className="h-4 w-4 mr-2" />
-                  Regenerate
-                </Button>
-              </div>
-
-              {/* Title Preview */}
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
-                  Title
-                </label>
-                <div className="p-3 bg-gray-50 rounded-md text-sm">
-                  {generatedContent.title}
-                </div>
-              </div>
-
-              {/* Excerpt Preview */}
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
-                  Excerpt
-                </label>
-                <div className="p-3 bg-gray-50 rounded-md text-sm">
-                  {generatedContent.excerpt}
-                </div>
-              </div>
-
-              {/* Content Preview */}
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
-                  Content
-                </label>
-                <div className="p-3 bg-gray-50 rounded-md text-sm max-h-64 overflow-y-auto whitespace-pre-wrap">
-                  {generatedContent.content}
-                </div>
-              </div>
+          {/* Error Display */}
+          {aiGeneration.error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+              {aiGeneration.error}
             </div>
           )}
-        </Dialog.Body>
 
-        <Dialog.Footer>
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleUseGenerated}
-            disabled={!generatedContent.title}
-          >
-            Use Generated Content
-          </Button>
-        </Dialog.Footer>
+          {/* Form Actions */}
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              disabled={aiGeneration.loading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              isLoading={aiGeneration.loading}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+            >
+              <IoSparkles className="h-4 w-4 mr-2" />
+              Generate Content
+            </Button>
+          </div>
+        </form>
       </Dialog.Content>
     </Dialog>
   );

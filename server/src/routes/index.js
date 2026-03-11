@@ -4,6 +4,7 @@ import userRoutes from "./user.routes.js";
 import postRoutes from "./post.routes.js";
 import commentRoutes from "./comment.routes.js";
 import categoryRoutes from "./category.routes.js";
+import dashboardRoutes from "./dashboard.routes.js";
 
 const router = express.Router();
 
@@ -18,5 +19,6 @@ router.use("/users", userRoutes);
 router.use("/posts", postRoutes);
 router.use("/comments", commentRoutes);
 router.use("/categories", categoryRoutes);
+router.use("/dashboard", dashboardRoutes);
 
 export default router;

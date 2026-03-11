@@ -16,34 +16,6 @@ const getCookieOptions = (maxAge) => ({
   maxAge, // Cookie expiration in milliseconds
 });
 
-/**
- * Register a new user
- */
-export const registerUser = asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
-
-  // Check if user already exists
-  const existingUser = await User.findOne({ email });
-  if (existingUser) {
-    throw new ApiError(400, "Email already registered");
-  }
-
-  // Hash password
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  // Build user data
-  const userData = {
-    name,
-    email,
-    password: hashedPassword,
-  };
-
-  // Create user
-  const user = (await User.create(userData)).toJSON();
-
-  res.status(201).json(new ApiResponse(201, null, user));
-});
-
 /* 
    Login User
  */
@@ -80,7 +52,7 @@ export const loginUser = asyncHandler(async (req, res) => {
   const userData = user.toJSON();
 
   res.status(200).json(
-    new ApiResponse(200, "Login successful", {
+    new ApiResponse(200, null, {
       user: userData,
     }),
   );
@@ -101,6 +73,12 @@ export const refreshToken = asyncHandler(async (req, res) => {
     // Verify refresh token
     const decoded = jwt.verifyToken(refreshToken, "refresh");
 
+    // Get user data
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      throw new ApiError(401, "User not found");
+    }
+
     // Generate a new access token using payload from refresh token
     const accessToken = jwt.generateToken(
       {
@@ -113,10 +91,12 @@ export const refreshToken = asyncHandler(async (req, res) => {
     // Set new access token in cookie
     res.cookie("accessToken", accessToken, getCookieOptions(15 * 60 * 1000)); // 15 minutes
 
-    // Return success message
-    res
-      .status(200)
-      .json(new ApiResponse(200, "Access token refreshed successfully"));
+    // Return user data along with success message
+    res.status(200).json(
+      new ApiResponse(200, "Access token refreshed successfully", {
+        user: user.toJSON(),
+      }),
+    );
   } catch (err) {
     throw new ApiError(401, "Invalid or expired refresh token");
   }

@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import mongoosePaginate from "mongoose-paginate-v2";
 import slugify from "slugify";
+import fileField from "./plugins/fileField.js";
 
 const postSchema = new mongoose.Schema(
   {
@@ -87,6 +88,7 @@ postSchema.pre("save", function () {
 });
 
 postSchema.plugin(mongoosePaginate);
+postSchema.plugin(fileField, { fields: ["featuredImage"] });
 
 const Post = mongoose.model("Post", postSchema);
 

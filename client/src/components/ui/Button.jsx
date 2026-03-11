@@ -18,6 +18,7 @@ function Button({
       "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:ring-blue-500",
     outline:
       "text-blue-600 border border-blue-600 hover:bg-blue-50 focus:ring-blue-500",
+    destructive: "text-white bg-red-600 hover:bg-red-700 focus:ring-red-500",
   };
 
   const sizes = {

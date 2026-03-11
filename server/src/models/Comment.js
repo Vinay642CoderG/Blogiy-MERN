@@ -17,16 +17,13 @@ const commentSchema = new mongoose.Schema(
       required: true,
     },
 
-    author: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+    // Name field for anonymous users
+    name: {
+      type: String,
       required: true,
-    },
-
-    parentComment: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Comment",
-      default: null,
+      trim: true,
+      minlength: 1,
+      maxlength: 100,
     },
 
     isEdited: {
@@ -41,8 +38,6 @@ const commentSchema = new mongoose.Schema(
 
 // Index for faster queries
 commentSchema.index({ post: 1, createdAt: -1 });
-commentSchema.index({ author: 1 });
-commentSchema.index({ parentComment: 1 });
 
 commentSchema.plugin(mongoosePaginate);
 

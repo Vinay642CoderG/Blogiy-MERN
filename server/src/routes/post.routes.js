@@ -3,8 +3,6 @@ import {
   createPost,
   getPosts,
   getPostById,
-  getPostBySlug,
-  getMyPosts,
   updatePost,
   deletePost,
   generateContent,
@@ -15,7 +13,7 @@ import {
   updatePostSchema,
   generateContentSchema,
 } from "../validations/post.validation.js";
-import { protect, restrictTo } from "../middleware/auth.middleware.js";
+import { protect } from "../middleware/auth.middleware.js";
 import { upload, handleMulterError } from "#src/config/multer.js";
 
 const router = express.Router();
@@ -24,12 +22,9 @@ const router = express.Router();
 // Get all published posts (no auth required)
 router.get("/", getPosts);
 
-// Get post by slug (public for published posts)
-router.get("/slug/:slug", getPostBySlug);
-
 /* Protected Routes - Read Access for All Authenticated Users */
-// Get my posts (author's own posts)
-router.get("/my-posts", protect, getMyPosts);
+// Get all posts for admin (shows all statuses)
+router.get("/admin/all", protect, getPosts);
 
 // Get post by ID (authenticated users can view)
 router.get("/:id", protect, getPostById);
@@ -39,16 +34,15 @@ router.get("/:id", protect, getPostById);
 router.post(
   "/generate-content",
   protect,
-  restrictTo("admin"),
   validate(generateContentSchema),
   generateContent,
 );
 
 // Create post (admin only)
+// Create post (admin only)
 router.post(
   "/",
   protect,
-  restrictTo("admin"),
   upload.single("featuredImage"),
   handleMulterError,
   validate(createPostSchema),
@@ -59,7 +53,6 @@ router.post(
 router.put(
   "/:id",
   protect,
-  restrictTo("admin"),
   upload.single("featuredImage"),
   handleMulterError,
   validate(updatePostSchema),
@@ -67,6 +60,6 @@ router.put(
 );
 
 // Delete post (admin only)
-router.delete("/:id", protect, restrictTo("admin"), deletePost);
+router.delete("/:id", protect, deletePost);
 
 export default router;

@@ -61,10 +61,12 @@ export const getPosts = asyncHandler(async (req, res) => {
   }
 
   // Filter by status
-  if (status) {
+  if (status && status.trim() !== "") {
     query.status = status;
-  } else {
-    // Public route - only show published posts
+  }
+  // For admin route, if no status is specified, show all posts
+  // For public route, if no status is specified, show only published posts
+  else if (!req.user) {
     query.status = "published";
   }
 
@@ -114,8 +116,8 @@ export const getPostById = asyncHandler(async (req, res) => {
   }
 
   // Check if user can view this post
-  // Admins can view all posts, regular users can only view published posts
-  if (post.status !== "published" && req.user.role !== "admin") {
+  // Authenticated users can view all posts, unauthenticated users can only view published posts
+  if (post.status !== "published" && !req.user) {
     throw new ApiError(403, "You don't have permission to view this post");
   }
 
@@ -124,75 +126,6 @@ export const getPostById = asyncHandler(async (req, res) => {
   await post.save();
 
   res.status(200).json(new ApiResponse(200, null, post));
-});
-
-/* 
-   Get Post By Slug
-*/
-export const getPostBySlug = asyncHandler(async (req, res) => {
-  const { slug } = req.params;
-
-  const post = await Post.findOne({ slug }).populate(
-    "author",
-    "name email profileImage",
-  );
-
-  if (!post) {
-    throw new ApiError(404, "Post not found");
-  }
-
-  // Check if user can view this post
-  if (post.status !== "published") {
-    if (!req.user) {
-      throw new ApiError(403, "This post is not published");
-    }
-    if (
-      req.user.role !== "admin" &&
-      post.author._id.toString() !== req.user.id
-    ) {
-      throw new ApiError(403, "You don't have permission to view this post");
-    }
-  }
-
-  // Increment views
-  post.views += 1;
-  await post.save();
-
-  res.status(200).json(new ApiResponse(200, null, post));
-});
-
-/* 
-   Get My Posts (Author's own posts)
-*/
-export const getMyPosts = asyncHandler(async (req, res) => {
-  const {
-    page = 1,
-    limit = 10,
-    status,
-    sortBy = "createdAt",
-    order = "desc",
-  } = req.query;
-
-  const query = { author: req.user.id };
-
-  if (status) {
-    query.status = status;
-  }
-
-  const sort = {
-    [sortBy]: order === "asc" ? 1 : -1,
-  };
-
-  const options = {
-    page: Number(page),
-    limit: Number(limit),
-    sort,
-    populate: { path: "author", select: "name email profileImage" },
-  };
-
-  const posts = await Post.paginate(query, options);
-
-  res.status(200).json(new ApiResponse(200, null, posts));
 });
 
 /* 
@@ -271,7 +204,7 @@ export const deletePost = asyncHandler(async (req, res) => {
 export const generateContent = asyncHandler(async (req, res) => {
   const { title } = req.body;
 
-  const prompt = `Generate a blog content for this topic: "${title.trim()}" in simple text format`;
+  const prompt = `Generate a blog for: "${title.trim()}". Output only the blog content.`;
 
   const content = await generateAIContent(prompt);
 

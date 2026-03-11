@@ -43,21 +43,6 @@ export const getCategories = asyncHandler(async (req, res) => {
 });
 
 /*
-   Get Category By ID
-*/
-export const getCategoryById = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-
-  const category = await Category.findById(id);
-
-  if (!category) {
-    throw new ApiError(404, "Category not found");
-  }
-
-  res.status(200).json(new ApiResponse(200, null, category));
-});
-
-/*
    Update Category
 */
 export const updateCategory = asyncHandler(async (req, res) => {
@@ -109,56 +94,4 @@ export const deleteCategory = asyncHandler(async (req, res) => {
   await category.deleteOne();
 
   res.status(200).json(new ApiResponse(200));
-});
-
-/*
-   Get Posts By Category
-*/
-export const getPostsByCategory = asyncHandler(async (req, res) => {
-  const { categoryId } = req.params;
-  const {
-    page = 1,
-    limit = 10,
-    search,
-    sortBy = "createdAt",
-    order = "desc",
-  } = req.query;
-
-  // Check if category exists
-  const category = await Category.findById(categoryId);
-  if (!category) {
-    throw new ApiError(404, "Category not found");
-  }
-
-  const query = {
-    category: categoryId,
-    status: "published",
-  };
-
-  if (search) {
-    query.$or = [
-      { title: { $regex: search, $options: "i" } },
-      { content: { $regex: search, $options: "i" } },
-    ];
-  }
-
-  const sort = {
-    [sortBy]: order === "asc" ? 1 : -1,
-  };
-
-  const options = {
-    page: Number(page),
-    limit: Number(limit),
-    sort,
-    populate: { path: "author", select: "name email profileImage" },
-  };
-
-  const posts = await Post.paginate(query, options);
-
-  res.status(200).json(
-    new ApiResponse(200, null, {
-      category,
-      posts,
-    }),
-  );
 });

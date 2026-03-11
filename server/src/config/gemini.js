@@ -11,7 +11,7 @@ const main = async (prompt) => {
     throw new Error("Gemini API key not configured");
   }
   const response = await genAI.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.5-flash",
     contents: prompt,
   });
   return response.text;

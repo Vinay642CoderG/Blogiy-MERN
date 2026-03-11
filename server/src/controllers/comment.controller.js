@@ -5,10 +5,10 @@ import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 
 /* 
-   Create Comment
+   Create Comment (Anonymous only)
 */
 export const createComment = asyncHandler(async (req, res) => {
-  const { content, postId, parentCommentId } = req.body;
+  const { content, postId, name } = req.body;
 
   // Check if post exists and is published
   const post = await Post.findById(postId);
@@ -20,27 +20,18 @@ export const createComment = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Cannot comment on unpublished posts");
   }
 
-  // If replying to a comment, verify parent comment exists
-  if (parentCommentId) {
-    const parentComment = await Comment.findById(parentCommentId);
-    if (!parentComment) {
-      throw new ApiError(404, "Parent comment not found");
-    }
-    if (parentComment.post.toString() !== postId) {
-      throw new ApiError(400, "Parent comment does not belong to this post");
-    }
-  }
-
-  const comment = await Comment.create({
+  // Create comment (anonymous only)
+  const commentData = {
     content,
     post: postId,
-    author: req.user.id,
-    parentComment: parentCommentId || null,
-  });
+    name,
+  };
+
+  const comment = await Comment.create(commentData);
 
   const populatedComment = await Comment.findById(comment._id).populate(
-    "author",
-    "name email profileImage",
+    "post",
+    "title slug",
   );
 
   res.status(201).json(new ApiResponse(201, null, populatedComment));
@@ -64,10 +55,8 @@ export const getPostComments = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Post not found");
   }
 
-  // Only get top-level comments (no parent)
   const query = {
     post: postId,
-    parentComment: null,
   };
 
   const sort = {
@@ -78,7 +67,6 @@ export const getPostComments = asyncHandler(async (req, res) => {
     page: Number(page),
     limit: Number(limit),
     sort,
-    populate: { path: "author", select: "name email profileImage" },
   };
 
   const comments = await Comment.paginate(query, options);
@@ -87,67 +75,11 @@ export const getPostComments = asyncHandler(async (req, res) => {
 });
 
 /* 
-   Get Replies for a Comment
-*/
-export const getCommentReplies = asyncHandler(async (req, res) => {
-  const { commentId } = req.params;
-  const {
-    page = 1,
-    limit = 10,
-    sortBy = "createdAt",
-    order = "asc",
-  } = req.query;
-
-  // Check if parent comment exists
-  const parentComment = await Comment.findById(commentId);
-  if (!parentComment) {
-    throw new ApiError(404, "Comment not found");
-  }
-
-  const query = {
-    parentComment: commentId,
-  };
-
-  const sort = {
-    [sortBy]: order === "asc" ? 1 : -1,
-  };
-
-  const options = {
-    page: Number(page),
-    limit: Number(limit),
-    sort,
-    populate: { path: "author", select: "name email profileImage" },
-  };
-
-  const replies = await Comment.paginate(query, options);
-
-  res.status(200).json(new ApiResponse(200, null, replies));
-});
-
-/* 
-   Get Comment by ID
-*/
-export const getCommentById = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-
-  const comment = await Comment.findById(id).populate(
-    "author",
-    "name email profileImage",
-  );
-
-  if (!comment) {
-    throw new ApiError(404, "Comment not found");
-  }
-
-  res.status(200).json(new ApiResponse(200, null, comment));
-});
-
-/* 
-   Update Comment
+   Update Comment (Admin only)
 */
 export const updateComment = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { content } = req.body;
+  const { content, name } = req.body;
 
   const comment = await Comment.findById(id);
 
@@ -155,25 +87,25 @@ export const updateComment = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Comment not found");
   }
 
-  // Check if user can update this comment
-  if (req.user.role !== "admin" && comment.author.toString() !== req.user.id) {
-    throw new ApiError(403, "You don't have permission to update this comment");
-  }
-
+  // Update fields
   comment.content = content;
   comment.isEdited = true;
+
+  // Admin can update name
+  if (name) comment.name = name;
+
   await comment.save();
 
   const updatedComment = await Comment.findById(comment._id).populate(
-    "author",
-    "name email profileImage",
+    "post",
+    "title slug",
   );
 
   res.status(200).json(new ApiResponse(200, null, updatedComment));
 });
 
 /* 
-   Delete Comment
+   Delete Comment (Admin only)
 */
 export const deleteComment = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -184,34 +116,40 @@ export const deleteComment = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Comment not found");
   }
 
-  // Check if user can delete this comment
-  if (req.user.role !== "admin" && comment.author.toString() !== req.user.id) {
-    throw new ApiError(403, "You don't have permission to delete this comment");
-  }
-
-  // Delete all replies to this comment
-  await Comment.deleteMany({ parentComment: id });
-
-  // Delete the comment itself
+  // Delete the comment
   await comment.deleteOne();
 
   res.status(200).json(new ApiResponse(200));
 });
 
 /* 
-   Get My Comments
+   Get All Comments (Admin Only)
 */
-export const getMyComments = asyncHandler(async (req, res) => {
+export const getAllComments = asyncHandler(async (req, res) => {
   const {
     page = 1,
     limit = 20,
     sortBy = "createdAt",
     order = "desc",
+    search = "",
+    postId = "",
   } = req.query;
 
-  const query = {
-    author: req.user.id,
-  };
+  // Build query
+  const query = {};
+
+  // Search in content or name
+  if (search) {
+    query.$or = [
+      { content: { $regex: search, $options: "i" } },
+      { name: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  // Filter by post
+  if (postId) {
+    query.post = postId;
+  }
 
   const sort = {
     [sortBy]: order === "asc" ? 1 : -1,
@@ -221,10 +159,7 @@ export const getMyComments = asyncHandler(async (req, res) => {
     page: Number(page),
     limit: Number(limit),
     sort,
-    populate: [
-      { path: "author", select: "name email profileImage" },
-      { path: "post", select: "title slug" },
-    ],
+    populate: [{ path: "post", select: "title slug" }],
   };
 
   const comments = await Comment.paginate(query, options);

@@ -2,17 +2,15 @@ import express from "express";
 import {
   createCategory,
   getCategories,
-  getCategoryById,
   updateCategory,
   deleteCategory,
-  getPostsByCategory,
 } from "../controllers/category.controller.js";
 import validate from "../middleware/validate.middleware.js";
 import {
   createCategorySchema,
   updateCategorySchema,
 } from "../validations/category.validation.js";
-import { protect, restrictTo } from "../middleware/auth.middleware.js";
+import { protect } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
@@ -20,32 +18,14 @@ const router = express.Router();
 // Get all categories
 router.get("/", getCategories);
 
-// Get posts by category
-router.get("/:categoryId/posts", getPostsByCategory);
-
-// Get category by ID
-router.get("/:id", getCategoryById);
-
 /* Admin Only Routes */
 // Create category
-router.post(
-  "/",
-  protect,
-  restrictTo("admin"),
-  validate(createCategorySchema),
-  createCategory,
-);
+router.post("/", protect, validate(createCategorySchema), createCategory);
 
 // Update category
-router.put(
-  "/:id",
-  protect,
-  restrictTo("admin"),
-  validate(updateCategorySchema),
-  updateCategory,
-);
+router.put("/:id", protect, validate(updateCategorySchema), updateCategory);
 
 // Delete category
-router.delete("/:id", protect, restrictTo("admin"), deleteCategory);
+router.delete("/:id", protect, deleteCategory);
 
 export default router;

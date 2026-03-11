@@ -13,12 +13,6 @@ const footerLinks = {
     { name: "About", href: "/about" },
     { name: "Contact", href: "/contact" },
   ],
-  categories: [
-    { name: "Technology", href: "/categories/technology" },
-    { name: "Design", href: "/categories/design" },
-    { name: "Development", href: "/categories/development" },
-    { name: "Lifestyle", href: "/categories/lifestyle" },
-  ],
 };
 
 const socialLinks = [
@@ -53,7 +47,7 @@ const Footer = () => {
                 to="/"
                 className="text-2xl font-bold text-white hover:text-blue-400 transition-colors duration-200"
               >
-                BlogName
+                Blogify
               </Link>
               <p className="mt-4 text-gray-400 max-w-md">
                 Welcome to my personal blog where I share insights, stories, and
@@ -99,25 +93,6 @@ const Footer = () => {
                       className="text-gray-400 hover:text-white transition-colors duration-200"
                     >
                       {link.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Categories */}
-            <div>
-              <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-4">
-                Categories
-              </h3>
-              <ul className="space-y-3">
-                {footerLinks.categories.map((category) => (
-                  <li key={category.name}>
-                    <Link
-                      to={category.href}
-                      className="text-gray-400 hover:text-white transition-colors duration-200"
-                    >
-                      {category.name}
                     </Link>
                   </li>
                 ))}

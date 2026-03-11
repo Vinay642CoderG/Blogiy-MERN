@@ -45,24 +45,3 @@ export const protect = asyncHandler(async (req, res, next) => {
     throw new ApiError(401, "Unauthorized");
   }
 });
-
-/**
- * Role Based Authorization
- */
-export const restrictTo = (...roles) => {
-  if (roles.length === 1 && Array.isArray(roles[0])) {
-    roles = roles[0];
-  }
-
-  return (req, res, next) => {
-    if (!req.user) {
-      return next(new ApiError(401, "Unauthorized"));
-    }
-
-    if (!roles.includes(req.user.role)) {
-      return next(new ApiError(403, "Forbidden: You don't have permission"));
-    }
-
-    next();
-  };
-};
